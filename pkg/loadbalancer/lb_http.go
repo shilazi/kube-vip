@@ -3,6 +3,7 @@ package loadbalancer
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,15 +14,14 @@ import (
 )
 
 func (lb *LBInstance) startHTTP(bindAddress string) error {
-	log.Infof("Starting TCP Load Balancer for service [%s]", lb.instance.Name)
+	frontEnd := fmt.Sprintf("%s:%d", bindAddress, lb.instance.Port)
+	log.Infof("Starting HTTP Load Balancer for service [%s]", frontEnd)
 
 	// Validate the back end URLS
 	err := kubevip.ValidateBackEndURLS(&lb.instance.Backends)
 	if err != nil {
 		return err
 	}
-
-	frontEnd := fmt.Sprintf("%s:%d", bindAddress, lb.instance.Port)
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		// parse the url
@@ -33,17 +33,20 @@ func (lb *LBInstance) startHTTP(bindAddress string) error {
 		// Update the headers to allow for SSL redirection
 		req.URL.Host = url.Host
 		req.URL.Scheme = url.Scheme
+		// Get remote ip
+		remoteIP, _, _ := net.SplitHostPort(req.RemoteAddr)
+		req.Header.Set("X-Real-IP", remoteIP)
 		req.Header.Set("X-Forwarded-Host", req.Host)
 		req.Host = url.Host
 
-		//Print out the response (if debug logging)
-		if log.GetLevel() == log.DebugLevel {
-			fmt.Printf("Host:\t%s\n", req.Host)
-			fmt.Printf("Request:\t%s\n", req.Method)
-			fmt.Printf("URI:\t%s\n", req.RequestURI)
+		// Print out the response (if debug logging)
+		if log.GetLevel() >= log.DebugLevel {
+			log.Debugf("Host: %s", req.Host)
+			log.Debugf("Request: %s", req.Method)
+			log.Debugf("URI: %s", req.RequestURI)
 
 			for key, value := range req.Header {
-				fmt.Println("Header:", key, "Value:", value)
+				log.Debugf("Header: %s, Value: %s", key, value)
 			}
 		}
 
@@ -53,7 +56,7 @@ func (lb *LBInstance) startHTTP(bindAddress string) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler)
-	log.Infof("Starting server listening [%s]", frontEnd)
+	log.Infof("Starting server listening [%s]", lb.instance.Name)
 
 	server := &http.Server{Addr: frontEnd, Handler: mux}
 
@@ -79,15 +82,14 @@ func (lb *LBInstance) startHTTP(bindAddress string) error {
 
 //StartHTTP - begins the HTTP load balancer
 func StartHTTP(lb *kubevip.LoadBalancer, address string) error {
-	log.Infof("Starting TCP Load Balancer for service [%s]", lb.Name)
+	frontEnd := fmt.Sprintf("%s:%d", address, lb.Port)
+	log.Infof("Starting HTTP Load Balancer for service [%s]", frontEnd)
 
 	// Validate the back end URLS
 	err := kubevip.ValidateBackEndURLS(&lb.Backends)
 	if err != nil {
 		return err
 	}
-
-	frontEnd := fmt.Sprintf("%s:%d", address, lb.Port)
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		// parse the url
@@ -99,17 +101,20 @@ func StartHTTP(lb *kubevip.LoadBalancer, address string) error {
 		// Update the headers to allow for SSL redirection
 		req.URL.Host = url.Host
 		req.URL.Scheme = url.Scheme
+		// Get remote ip
+		remoteIP, _, _ := net.SplitHostPort(req.RemoteAddr)
+		req.Header.Set("X-Real-IP", remoteIP)
 		req.Header.Set("X-Forwarded-Host", req.Host)
 		req.Host = url.Host
 
-		//Print out the response (if debug logging)
-		if log.GetLevel() == log.DebugLevel {
-			fmt.Printf("Host:\t%s\n", req.Host)
-			fmt.Printf("Request:\t%s\n", req.Method)
-			fmt.Printf("URI:\t%s\n", req.RequestURI)
+		// Print out the response (if debug logging)
+		if log.GetLevel() >= log.DebugLevel {
+			log.Debugf("Host: %s", req.Host)
+			log.Debugf("Request: %s", req.Method)
+			log.Debugf("URI: %s", req.RequestURI)
 
 			for key, value := range req.Header {
-				fmt.Println("Header:", key, "Value:", value)
+				log.Debugf("Header: %s, Value: %s", key, value)
 			}
 		}
 
@@ -119,7 +124,7 @@ func StartHTTP(lb *kubevip.LoadBalancer, address string) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler)
-	log.Infof("Starting server listening [%s]", frontEnd)
+	log.Infof("Starting server listening [%s]", lb.Name)
 	http.ListenAndServe(frontEnd, mux)
 	// Should never get here
 	return nil
