@@ -90,7 +90,7 @@ type BackEnd struct {
 	Address string `yaml:"address"`
 
 	// URL is a raw URL to a backend service
-	RawURL string `yaml:"url,omitempty"`
+	RawURL string `yaml:"rawURL,omitempty"`
 
 	// ParsedURL - A validated URL to a backend
 	ParsedURL *url.URL `yaml:"parsedURL,omitempty"`
