@@ -4,7 +4,6 @@ import (
 	"io"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/kube-vip/kube-vip/pkg/kubevip"
 	log "github.com/sirupsen/logrus"
@@ -23,24 +22,24 @@ import (
 func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer) {
 
 	var endpoint net.Conn
-	defer frontendConnection.Close()
 	// Makes sure we close the connections to the endpoint when we've completed
+	defer frontendConnection.Close()
 
-	// Set a timeout for connecting to an endpoint
-	dialer := net.Dialer{Timeout: time.Millisecond * 500}
 	for {
 
 		// Connect to Endpoint
-		ep, err := lb.ReturnEndpointAddr()
+		be, ep, err := lb.ReturnEndpointAddr()
 		if err != nil {
+			log.Errorf("No Backends available")
 			return
 		}
 
 		// We now dial to an endpoint with a timeout of half a second
 		// TODO - make this adjustable
-		endpoint, err = dialer.Dial("tcp", ep)
+		endpoint, err = net.DialTimeout("tcp", ep, dialTMOUT)
 		if err != nil {
-			log.Debugf("%v", err)
+			be.SetAlive(lb, false)
+			log.Debugf("unreachable, error: %v", err)
 			log.Warnf("[%s]---X [FAILED] X-->[%s]", frontendConnection.RemoteAddr(), ep)
 		} else {
 			log.Debugf("[%s]---->[ACCEPT]---->[%s]", frontendConnection.RemoteAddr(), ep)
@@ -77,24 +76,24 @@ func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer)
 func persistentUDPConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer) {
 
 	var endpoint net.Conn
-	defer frontendConnection.Close()
 	// Makes sure we close the connections to the endpoint when we've completed
+	defer frontendConnection.Close()
 
-	// Set a timeout for connecting to an endpoint
-	dialer := net.Dialer{Timeout: time.Millisecond * 500}
 	for {
 
 		// Connect to Endpoint
-		ep, err := lb.ReturnEndpointAddr()
+		be, ep, err := lb.ReturnEndpointAddr()
 		if err != nil {
+			log.Errorf("No Backends available")
 			return
 		}
 
 		// We now dial to an endpoint with a timeout of half a second
 		// TODO - make this adjustable
-		endpoint, err = dialer.Dial("udp", ep)
+		endpoint, err = net.DialTimeout("udp", ep, dialTMOUT)
 		if err != nil {
-			log.Debugf("%v", err)
+			be.SetAlive(lb, false)
+			log.Debugf("unreachable, error: %v", err)
 			log.Warnf("[%s]---X [FAILED] X-->[%s]", frontendConnection.RemoteAddr(), ep)
 		} else {
 			log.Debugf("[%s]---->[ACCEPT]---->[%s]", frontendConnection.RemoteAddr(), ep)

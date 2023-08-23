@@ -2,6 +2,7 @@ package kubevip
 
 import (
 	"net/url"
+	"sync"
 
 	"github.com/kube-vip/kube-vip/pkg/bgp"
 )
@@ -147,6 +148,10 @@ type LoadBalancer struct {
 
 // BackEnd is a server we will load balance over
 type BackEnd struct {
+	// Backend alive bool status
+	Alive bool
+	mux sync.RWMutex
+
 	// Backend Port to Load Balance to
 	Port int `yaml:"port"`
 

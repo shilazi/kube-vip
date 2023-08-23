@@ -2,10 +2,19 @@ package loadbalancer
 
 import (
 	"fmt"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/kube-vip/kube-vip/pkg/kubevip"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	// reset alive timer period, every 30 second
+	resetAlivePeriod = time.Second * 30
+	// net.Dial Timeout, default 0.5 sec
+	dialTMOUT = time.Millisecond * 500
 )
 
 //LBInstance - manages the state of load balancer instances
@@ -29,7 +38,8 @@ func (lm *LBManager) Add(bindAddress string, lb *kubevip.LoadBalancer) error {
 		instance: lb,
 	}
 
-	switch strings.ToLower(lb.Type) {
+	network := strings.ToLower(lb.Type)
+	switch network {
 	case "tcp":
 		err := newLB.startTCP(bindAddress)
 		if err != nil {
@@ -45,9 +55,45 @@ func (lm *LBManager) Add(bindAddress string, lb *kubevip.LoadBalancer) error {
 		if err != nil {
 			return err
 		}
+		// set to 'tcp' for dial
+		network = "tcp"
 	default:
 		return fmt.Errorf("Unknown Load Balancer type [%s]", lb.Type)
 	}
+
+	// start backend reset alive timer
+	go func(l *LBInstance, network string) {
+		log.Infof("Staring load Balancer [%s] backend reset alive timer", l.instance.Name)
+
+		t := time.NewTicker(resetAlivePeriod)
+
+		defer func() {
+			t.Stop()
+			log.Infof("Load Balancer [%s] backend reset alive timer has stopped", l.instance.Name)
+		}()
+
+		for {
+			select {
+			case <-l.stop:
+				return
+			case <-t.C:
+				for x := range l.instance.Backends {
+					if !l.instance.Backends[x].IsAlive() {
+						go func() {
+							fullAddress := fmt.Sprintf("%s:%d", l.instance.Backends[x].Address, l.instance.Backends[x].Port)
+							conn, err := net.DialTimeout(network, fullAddress, dialTMOUT)
+							if err != nil {
+								log.Warnf("unreachable, error: %v", err)
+							} else {
+								l.instance.Backends[x].SetAlive(l.instance, true)
+								conn.Close()
+							}
+						}()
+					}
+				}
+			}
+		}
+	}(&newLB, network)
 
 	lm.loadBalancer = append(lm.loadBalancer, newLB)
 	return nil
