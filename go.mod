@@ -7,6 +7,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/hashicorp/raft v1.1.2
 	github.com/packethost/packngo v0.2.0
+	github.com/pires/go-proxyproto v0.6.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.6

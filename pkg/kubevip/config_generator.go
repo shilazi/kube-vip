@@ -59,6 +59,9 @@ const (
 	//lbBindToVip defines if the load-balancer should bind ONLY to the virtual IP
 	lbBindToVip = "lb_bindtovip"
 
+	//lbEnableProxyProtocol defines if enable send proxy protocol data to backends
+	lbEnableProxyProtocol = "lb_enableproxyprotocol"
+
 	//lbName defines the name of load-balancer
 	lbName = "lb_name"
 
@@ -250,6 +253,16 @@ func parseEnvironmentLoadBalancer(c *Config) error {
 		c.LoadBalancers[0].BindToVip = b
 	}
 
+	// Find If enable send proxy protocol data to backends
+	env = os.Getenv(lbEnableProxyProtocol)
+	if env != "" {
+		b, err := strconv.ParseBool(env)
+		if err != nil {
+			return err
+		}
+		c.LoadBalancers[0].EnableProxyProtocol = b
+	}
+
 	// Find global backendport
 	env = os.Getenv(lbBackendPort)
 	if env != "" {
@@ -351,6 +364,10 @@ func GenerateManifestFromConfig(c *Config, imageVersion string) string {
 		{
 			Name:  lbBindToVip,
 			Value: strconv.FormatBool(c.LoadBalancers[0].BindToVip),
+		},
+		{
+			Name:  lbEnableProxyProtocol,
+			Value: strconv.FormatBool(c.LoadBalancers[0].EnableProxyProtocol),
 		},
 	}
 

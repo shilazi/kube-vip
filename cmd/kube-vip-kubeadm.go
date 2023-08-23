@@ -45,6 +45,7 @@ func init() {
 	// Load Balancer flags
 	kubeKubeadm.PersistentFlags().BoolVar(&initConfig.EnableLoadBalancer, "lbEnable", false, "Enable a load-balancer on the VIP")
 	kubeKubeadm.PersistentFlags().BoolVar(&initLoadBalancer.BindToVip, "lbBindToVip", true, "Bind example load balancer to VIP")
+	kubeKubeadm.PersistentFlags().BoolVar(&initLoadBalancer.EnableProxyProtocol, "lbEnableProxyProtocol", false, "Enable send proxy protocol data to backends")
 	kubeKubeadm.PersistentFlags().StringVar(&initLoadBalancer.Type, "lbType", "tcp", "Type of load balancer instance (TCP/HTTP)")
 	kubeKubeadm.PersistentFlags().StringVar(&initLoadBalancer.Name, "lbName", "Kubeadm Load Balancer", "The name of a load balancer instance")
 	kubeKubeadm.PersistentFlags().IntVar(&initLoadBalancer.Port, "lbPort", 6443, "Port that load balancer will expose on")

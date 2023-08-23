@@ -140,6 +140,7 @@ func SampleConfig() {
 				Type:      "tcp",
 				Port:      6444,
 				BindToVip: true,
+				EnableProxyProtocol: false,
 				Backends: []BackEnd{
 					{
 						Address: "192.168.0.100",
