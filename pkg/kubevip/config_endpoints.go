@@ -46,21 +46,26 @@ func ValidateBackEndURLS(endpoints *[]BackEnd) error {
 }
 
 // ReturnEndpointAddr - returns an endpoint
-func (lb LoadBalancer) ReturnEndpointAddr() (*BackEnd, string, error) {
+func (lb LoadBalancer) ReturnEndpointAddr(backendIndex *int) (*BackEnd, string, error) {
 	if len(lb.Backends) == 0 {
 		return nil, "", fmt.Errorf("No Backends configured")
 	}
-	if endPointIndex < len(lb.Backends)-1 {
-		endPointIndex++
+	if backendIndex == nil {
+		log.Warnf("[%s] give nil index, will use global index [%d]", lb.Name, endPointIndex)
+		backendIndex = &endPointIndex
+	}
+	if *backendIndex < len(lb.Backends)-1 {
+		*backendIndex++
 	} else {
 		// reset the index to the beginning
-		endPointIndex = 0
+		*backendIndex = 0
 	}
+	log.Debugf("[%s] select index [%d]", lb.Name, *backendIndex)
 	// TODO - weighting, decision algorythmn
-	if lb.Backends[endPointIndex].IsAlive() {
-		endpoint := fmt.Sprintf("%s:%d", lb.Backends[endPointIndex].Address, lb.Backends[endPointIndex].Port)
+	if lb.Backends[*backendIndex].IsAlive() {
+		endpoint := fmt.Sprintf("%s:%d", lb.Backends[*backendIndex].Address, lb.Backends[*backendIndex].Port)
 		log.Debugf("[%s] return endpoint [%s]", lb.Name, endpoint)
-		return &lb.Backends[endPointIndex], endpoint, nil
+		return &lb.Backends[*backendIndex], endpoint, nil
 	} else {
 		allDown := true
 		for x := range lb.Backends {
@@ -75,28 +80,33 @@ func (lb LoadBalancer) ReturnEndpointAddr() (*BackEnd, string, error) {
 			for x := range lb.Backends {
 				lb.Backends[x].SetAlive(&lb, true)
 			}
-			return lb.ReturnEndpointAddr()
+			return lb.ReturnEndpointAddr(backendIndex)
 		}
 	}
-	return lb.ReturnEndpointAddr()
+	return lb.ReturnEndpointAddr(backendIndex)
 }
 
 // ReturnEndpointURL - returns an endpoint
-func (lb LoadBalancer) ReturnEndpointURL() (*BackEnd, string, *url.URL, error) {
+func (lb LoadBalancer) ReturnEndpointURL(backendIndex *int) (*BackEnd, string, *url.URL, error) {
 	if len(lb.Backends) == 0 {
 		return nil, "", nil, fmt.Errorf("No Backends configured")
 	}
-	if endPointIndex != len(lb.Backends)-1 {
-		endPointIndex++
+	if backendIndex == nil {
+		log.Warnf("[%s] give nil index, will use global index [%d]", lb.Name, endPointIndex)
+		backendIndex = &endPointIndex
+	}
+	if *backendIndex != len(lb.Backends)-1 {
+		*backendIndex++
 	} else {
 		// reset the index to the beginning
-		endPointIndex = 0
+		*backendIndex = 0
 	}
+	log.Debugf("[%s] select index [%d]", lb.Name, *backendIndex)
 	// TODO - weighting, decision algorythmn
-	if lb.Backends[endPointIndex].IsAlive() {
-		endpoint := fmt.Sprintf("%s:%d", lb.Backends[endPointIndex].Address, lb.Backends[endPointIndex].Port)
+	if lb.Backends[*backendIndex].IsAlive() {
+		endpoint := fmt.Sprintf("%s:%d", lb.Backends[*backendIndex].Address, lb.Backends[*backendIndex].Port)
 		log.Debugf("[%s] return endpoint [%s]", lb.Name, endpoint)
-		return &lb.Backends[endPointIndex], endpoint, lb.Backends[endPointIndex].ParsedURL, nil
+		return &lb.Backends[*backendIndex], endpoint, lb.Backends[*backendIndex].ParsedURL, nil
 	} else  {
 		allDown := true
 		for x := range lb.Backends {
@@ -111,10 +121,10 @@ func (lb LoadBalancer) ReturnEndpointURL() (*BackEnd, string, *url.URL, error) {
 			for x := range lb.Backends {
 				lb.Backends[x].SetAlive(&lb, true)
 			}
-			return lb.ReturnEndpointURL()
+			return lb.ReturnEndpointURL(backendIndex)
 		}
 	}
-	return lb.ReturnEndpointURL()
+	return lb.ReturnEndpointURL(backendIndex)
 }
 
 // SetAlive - set backend alive

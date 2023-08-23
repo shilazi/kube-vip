@@ -23,6 +23,7 @@ type LBInstance struct {
 	stopped  chan bool             // LB is stopped
 	instance *kubevip.LoadBalancer // pointer to a LB instance
 	//	mux      sync.Mutex
+	backendIndex *int              // The backend index for LB instance
 }
 
 //LBManager - will manage a number of load blancer instances
@@ -32,10 +33,13 @@ type LBManager struct {
 
 //Add - handles the building of the load balancers
 func (lm *LBManager) Add(bindAddress string, lb *kubevip.LoadBalancer) error {
+	// Start the index negative as it will be incrememnted of first approach
+	initBackendIndex := -1
 	newLB := LBInstance{
 		stop:     make(chan bool, 1),
 		stopped:  make(chan bool, 1),
 		instance: lb,
+		backendIndex: &initBackendIndex,
 	}
 
 	network := strings.ToLower(lb.Type)

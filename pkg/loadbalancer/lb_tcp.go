@@ -29,7 +29,7 @@ func (lb *LBInstance) startTCP(bindAddress string) error {
 			select {
 
 			case <-lb.stop:
-				log.Debugln("Closing listener")
+				log.Debugf("Closing the load balancer [%s]", lb.instance.Name)
 
 				// We've closed the stop channel
 				err = l.Close()
@@ -53,7 +53,7 @@ func (lb *LBInstance) startTCP(bindAddress string) error {
 						log.Errorf("TCP Accept error [%s]", err)
 					}
 				}
-				go persistentConnection(fd, lb.instance)
+				go persistentConnection(fd, lb.instance, lb.backendIndex)
 			}
 		}
 	}()
@@ -79,7 +79,7 @@ func (lb *LBInstance) startTCPDNU(bindAddress string) error {
 	}
 	go func() {
 		<-lb.stop
-		log.Debugln("Closing listener")
+		log.Debugf("Closing the load balancer [%s]", lb.instance.Name)
 
 		// We've closed the stop channel
 		err = l.Close()
@@ -104,8 +104,8 @@ func (lb *LBInstance) startTCPDNU(bindAddress string) error {
 					return
 				}
 			}
-			go persistentConnection(fd, lb.instance)
-			//go processRequests(lb.instance, fd)
+			go persistentConnection(fd, lb.instance, lb.backendIndex)
+			//go processRequests(lb.instance, lb.backendIndex, fd)
 		}
 		//	}
 	}()
@@ -123,7 +123,7 @@ func (lb *LBInstance) startTCPDNU(bindAddress string) error {
 //
 //
 
-func processRequests(lb *kubevip.LoadBalancer, frontendConnection net.Conn) {
+func processRequests(lb *kubevip.LoadBalancer, backendIndex *int, frontendConnection net.Conn) {
 	for {
 		// READ FROM client
 		buf := make([]byte, 1024*1024)
@@ -135,7 +135,7 @@ func processRequests(lb *kubevip.LoadBalancer, frontendConnection net.Conn) {
 		data := buf[0:datalen]
 
 		// Connect to Endpoint
-		be, ep, err := lb.ReturnEndpointAddr()
+		be, ep, err := lb.ReturnEndpointAddr(backendIndex)
 		if err != nil {
 			log.Errorf("No Backends available")
 		}

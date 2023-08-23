@@ -24,7 +24,7 @@ func (lb *LBInstance) startHTTP(bindAddress string) error {
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		// get endpoint
-		be, ep, epURL, err := lb.instance.ReturnEndpointURL()
+		be, ep, epURL, err := lb.instance.ReturnEndpointURL(lb.backendIndex)
 		if err != nil {
 			log.Errorf("No Backends available")
 			return
@@ -109,7 +109,7 @@ func StartHTTP(lb *kubevip.LoadBalancer, address string) error {
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		// get endpoint
-		be, ep, epURL, err := lb.ReturnEndpointURL()
+		be, ep, epURL, err := lb.ReturnEndpointURL(nil)
 		if err != nil {
 			log.Errorf("No Backends available")
 			return
