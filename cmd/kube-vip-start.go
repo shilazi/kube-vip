@@ -186,6 +186,7 @@ var kubeVipStart = &cobra.Command{
 				}
 
 				backends = append(backends, kubevip.BackEnd{
+					Alive:    true,
 					Address:  lb.Backends[x].Address,
 					Port:     lb.Backends[x].Port,
 					RawURL:   lb.Backends[x].RawURL,

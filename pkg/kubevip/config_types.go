@@ -1,6 +1,9 @@
 package kubevip
 
-import "net/url"
+import (
+	"net/url"
+	"sync"
+)
 
 // Config defines all of the settings for the Virtual IP / Load-balancer
 type Config struct {
@@ -83,6 +86,10 @@ type LoadBalancer struct {
 
 // BackEnd is a server we will load balance over
 type BackEnd struct {
+	// Backend alive bool status
+	Alive bool
+	mux sync.RWMutex
+
 	// Backend Port to Load Balance to
 	Port int `yaml:"port"`
 

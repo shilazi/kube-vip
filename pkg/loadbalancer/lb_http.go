@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"time"
 
 	"github.com/plunder-app/kube-vip/pkg/kubevip"
@@ -24,20 +23,37 @@ func (lb *LBInstance) startHTTP(bindAddress string) error {
 	}
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
-		// parse the url
-		url, _ := url.Parse(lb.instance.ReturnEndpointURL().String())
+		// get endpoint
+		be, ep, epURL, err := lb.instance.ReturnEndpointURL()
+		if err != nil {
+			log.Errorf("No Backends available")
+			return
+		}
+		conn, err := net.DialTimeout("tcp", ep, dialTMOUT)
+		if err != nil {
+			be.SetAlive(lb.instance, false)
+			log.Debugf("unreachable, error: %v", err)
+		} else {
+			conn.Close()
+		}
 
 		// create the reverse proxy
-		proxy := httputil.NewSingleHostReverseProxy(url)
+		proxy := httputil.NewSingleHostReverseProxy(epURL)
+		proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
+			log.Warnf("proxy, error: %v", err)
+			be.SetAlive(lb.instance, false)
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprintf(w, http.StatusText(http.StatusBadGateway))
+		}
 
 		// Update the headers to allow for SSL redirection
-		req.URL.Host = url.Host
-		req.URL.Scheme = url.Scheme
+		req.URL.Host = epURL.Host
+		req.URL.Scheme = epURL.Scheme
 		// Get remote ip
 		remoteIP, _, _ := net.SplitHostPort(req.RemoteAddr)
 		req.Header.Set("X-Real-IP", remoteIP)
 		req.Header.Set("X-Forwarded-Host", req.Host)
-		req.Host = url.Host
+		req.Host = epURL.Host
 
 		// Print out the response (if debug logging)
 		if log.GetLevel() >= log.DebugLevel {
@@ -92,20 +108,37 @@ func StartHTTP(lb *kubevip.LoadBalancer, address string) error {
 	}
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
-		// parse the url
-		url, _ := url.Parse(lb.ReturnEndpointURL().String())
+		// get endpoint
+		be, ep, epURL, err := lb.ReturnEndpointURL()
+		if err != nil {
+			log.Errorf("No Backends available")
+			return
+		}
+		conn, err := net.DialTimeout("tcp", ep, dialTMOUT)
+		if err != nil {
+			be.SetAlive(lb, false)
+			log.Debugf("unreachable, error: %v", err)
+		} else {
+			conn.Close()
+		}
 
 		// create the reverse proxy
-		proxy := httputil.NewSingleHostReverseProxy(url)
+		proxy := httputil.NewSingleHostReverseProxy(epURL)
+		proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
+			log.Warnf("proxy, error: %v", err)
+			be.SetAlive(lb, false)
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprintf(w, http.StatusText(http.StatusBadGateway))
+		}
 
 		// Update the headers to allow for SSL redirection
-		req.URL.Host = url.Host
-		req.URL.Scheme = url.Scheme
+		req.URL.Host = epURL.Host
+		req.URL.Scheme = epURL.Scheme
 		// Get remote ip
 		remoteIP, _, _ := net.SplitHostPort(req.RemoteAddr)
 		req.Header.Set("X-Real-IP", remoteIP)
 		req.Header.Set("X-Forwarded-Host", req.Host)
-		req.Host = url.Host
+		req.Host = epURL.Host
 
 		// Print out the response (if debug logging)
 		if log.GetLevel() >= log.DebugLevel {

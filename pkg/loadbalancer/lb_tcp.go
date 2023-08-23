@@ -135,14 +135,15 @@ func processRequests(lb *kubevip.LoadBalancer, frontendConnection net.Conn) {
 		data := buf[0:datalen]
 
 		// Connect to Endpoint
-		ep, err := lb.ReturnEndpointAddr()
+		be, ep, err := lb.ReturnEndpointAddr()
 		if err != nil {
 			log.Errorf("No Backends available")
 		}
 		log.Debugf("Attempting endpoint [%s]", ep)
 
-		endpoint, err := net.Dial("tcp", ep)
+		endpoint, err := net.DialTimeout("tcp", ep, dialTMOUT)
 		if err != nil {
+			be.SetAlive(lb, false)
 			fmt.Println("dial error:", err)
 			// return nil, err
 		}
