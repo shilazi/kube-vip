@@ -90,6 +90,7 @@ func (lm *LBManager) Add(bindAddress string, lb *kubevip.LoadBalancer) error {
 								log.Warnf("unreachable, error: %v", err)
 							} else {
 								l.instance.Backends[x].SetAlive(l.instance, true)
+								writeProxyProtocol(lb.EnableProxyProtocol, conn, conn)
 								conn.Close()
 							}
 						}()

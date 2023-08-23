@@ -139,6 +139,10 @@ type LoadBalancer struct {
 	// BindToVip will bind the load balancer port to the VIP itself
 	BindToVip bool `yaml:"bindToVip"`
 
+	// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+	// EnableProxyProtocol, will send proxy protocol data to backends
+	EnableProxyProtocol bool `yaml:"enableProxyProtocol"`
+
 	//BackendPort, is a port that all backends are listening on (To be used to simplify building a list of backends)
 	BackendPort int `yaml:"backendPort"`
 

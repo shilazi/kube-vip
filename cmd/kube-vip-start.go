@@ -42,6 +42,7 @@ func init() {
 	kubeVipStart.Flags().StringSliceVar(&startRemotePeers, "remotePeers", []string{"server2:192.168.0.2:10000", "server3:192.168.0.3:10000"}, "Comma seperated remotePeers, format: id:address:port")
 	// Load Balancer flags
 	kubeVipStart.Flags().BoolVar(&startConfigLB.BindToVip, "lbBindToVip", false, "Bind example load balancer to VIP")
+	kubeVipStart.Flags().BoolVar(&startConfigLB.EnableProxyProtocol, "lbEnableProxyProtocol", false, "Enable send proxy protocol data to backends")
 	kubeVipStart.Flags().StringVar(&startConfigLB.Type, "lbType", "tcp", "Type of load balancer instance (TCP/HTTP)")
 	kubeVipStart.Flags().StringVar(&startConfigLB.Name, "lbName", "Example Load Balancer", "The name of a load balancer instance")
 	kubeVipStart.Flags().IntVar(&startConfigLB.Port, "lbPort", 6444, "Port that load balancer will expose on")

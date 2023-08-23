@@ -121,6 +121,9 @@ const (
 	//lbBindToVip defines if the load-balancer should bind ONLY to the virtual IP
 	lbBindToVip = "lb_bindtovip"
 
+	//lbEnableProxyProtocol defines if enable send proxy protocol data to backends
+	lbEnableProxyProtocol = "lb_enableproxyprotocol"
+
 	//lbName defines the name of load-balancer
 	lbName = "lb_name"
 

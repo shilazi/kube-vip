@@ -152,6 +152,7 @@ func processRequests(lb *kubevip.LoadBalancer, backendIndex *int, frontendConnec
 		// Set a timeout
 		endpoint.SetReadDeadline(time.Now().Add(time.Second * 1))
 
+		writeProxyProtocol(lb.EnableProxyProtocol, endpoint, frontendConnection)
 		b, err := endpointRequest(endpoint, ep, string(data))
 
 		_, err = frontendConnection.Write(b)

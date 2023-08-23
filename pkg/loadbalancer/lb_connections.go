@@ -6,8 +6,12 @@ import (
 	"sync"
 
 	"github.com/kube-vip/kube-vip/pkg/kubevip"
+	"github.com/pires/go-proxyproto"
 	log "github.com/sirupsen/logrus"
 )
+
+// proxy protocol version, default 2
+const proxyProtocolVersion = 2
 
 // 1. Load balancer port is exposed
 // 2. We listen
@@ -53,6 +57,7 @@ func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer,
 
 	// Begin copying incoming (frontend -> to an endpoint)
 	go func() {
+		writeProxyProtocol(lb.EnableProxyProtocol, endpoint, frontendConnection)
 		bytes, err := io.Copy(endpoint, frontendConnection)
 		log.Debugf("[%d] bytes of data sent to endpoint", bytes)
 		if err != nil {
@@ -107,6 +112,7 @@ func persistentUDPConnection(frontendConnection net.Conn, lb *kubevip.LoadBalanc
 
 	// Begin copying incoming (frontend -> to an endpoint)
 	go func() {
+		writeProxyProtocol(lb.EnableProxyProtocol, endpoint, frontendConnection)
 		bytes, err := io.Copy(endpoint, frontendConnection)
 		log.Debugf("[%d] bytes of data sent to endpoint", bytes)
 		if err != nil {
@@ -125,4 +131,18 @@ func persistentUDPConnection(frontendConnection net.Conn, lb *kubevip.LoadBalanc
 	// 	endpoint.Close()
 	// }()
 	wg.Wait()
+}
+
+// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+// https://github.com/pires/go-proxyproto/blob/main/header.go#L53
+func writeProxyProtocol (enableProxyProtocol bool, dst, src net.Conn)  {
+	if !enableProxyProtocol {
+		return
+	}
+	header := proxyproto.HeaderProxyFromAddrs(proxyProtocolVersion, src.RemoteAddr(), src.LocalAddr())
+	bytes, err := header.WriteTo(dst)
+	log.Debugf("[%d] bytes of proxyproto data sent to endpoint", bytes)
+	if err != nil {
+		log.Warnf("Error sending proxyproto data to endpoint [%s] [%v]", dst.RemoteAddr(), err)
+	}
 }

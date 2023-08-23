@@ -15,6 +15,7 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/osrg/gobgp v0.0.0-20210901090119-8ab84f8636ee
 	github.com/packethost/packngo v0.13.0
+	github.com/pires/go-proxyproto v0.6.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.1
 	github.com/sirupsen/logrus v1.8.1
