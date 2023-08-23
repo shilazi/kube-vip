@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/ghodss/yaml"
 	"github.com/kube-vip/kube-vip/pkg/kubevip"
@@ -16,6 +17,8 @@ var cliConfig kubevip.Config
 var cliConfigLB kubevip.LoadBalancer
 var cliLocalPeer string
 var cliRemotePeers, cliBackends []string
+var priority int32 = 2000001000
+var hostPathFile = appv1.HostPathFile
 
 func init() {
 	kubeVipSampleConfig.Flags().StringVar(&cliConfig.Interface, "interface", "eth0", "Name of the interface to bind to")
@@ -99,12 +102,16 @@ var kubeVipSampleManifest = &cobra.Command{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "kube-vip",
 				Namespace: "kube-system",
+				Labels:    map[string]string{
+					"component": "kube-vip",
+					"tier": "control-plane",
+				},
 			},
 			Spec: appv1.PodSpec{
 				Containers: []appv1.Container{
 					{
 						Name:  "kube-vip",
-						Image: fmt.Sprintf("ghcr.io/kube-vip/kube-vip:%s", Release.Version),
+						Image: fmt.Sprintf("docker.io/shilazi/kube-vip:%s", Release.Version),
 						SecurityContext: &appv1.SecurityContext{
 							Capabilities: &appv1.Capabilities{
 								Add: []appv1.Capability{
@@ -114,14 +121,20 @@ var kubeVipSampleManifest = &cobra.Command{
 							},
 						},
 						Args: []string{
+							"--log=4",
 							"start",
 							"-c",
 							"/etc/kube-vip/config.yaml",
 						},
+						Resources: appv1.ResourceRequirements{
+							Requests: appv1.ResourceList{
+								appv1.ResourceCPU: resource.MustParse("250m"),
+							},
+						},
 						VolumeMounts: []appv1.VolumeMount{
 							{
 								Name:      "config",
-								MountPath: "/etc/kube-vip/",
+								MountPath: "/etc/kube-vip/config.yaml",
 							},
 						},
 					},
@@ -131,12 +144,20 @@ var kubeVipSampleManifest = &cobra.Command{
 						Name: "config",
 						VolumeSource: appv1.VolumeSource{
 							HostPath: &appv1.HostPathVolumeSource{
-								Path: "/etc/kube-vip/",
+								Path: "/etc/kubernetes/vip.conf",
+								Type: &hostPathFile,
 							},
 						},
 					},
 				},
 				HostNetwork: true,
+				Priority: &priority,
+				PriorityClassName: "system-node-critical",
+				SecurityContext: &appv1.PodSecurityContext {
+					SeccompProfile: & appv1.SeccompProfile{
+						Type: appv1.SeccompProfileTypeRuntimeDefault,
+					},
+				},
 			},
 		}
 
