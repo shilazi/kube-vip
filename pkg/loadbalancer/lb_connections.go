@@ -19,7 +19,7 @@ import (
 // 7. We write response to load balancer
 // [goto loop]
 
-func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer) {
+func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer, backendIndex *int) {
 
 	var endpoint net.Conn
 	// Makes sure we close the connections to the endpoint when we've completed
@@ -28,7 +28,7 @@ func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer)
 	for {
 
 		// Connect to Endpoint
-		be, ep, err := lb.ReturnEndpointAddr()
+		be, ep, err := lb.ReturnEndpointAddr(backendIndex)
 		if err != nil {
 			log.Errorf("No Backends available")
 			return
@@ -73,7 +73,7 @@ func persistentConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer)
 	wg.Wait()
 }
 
-func persistentUDPConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer) {
+func persistentUDPConnection(frontendConnection net.Conn, lb *kubevip.LoadBalancer, backendIndex *int) {
 
 	var endpoint net.Conn
 	// Makes sure we close the connections to the endpoint when we've completed
@@ -82,7 +82,7 @@ func persistentUDPConnection(frontendConnection net.Conn, lb *kubevip.LoadBalanc
 	for {
 
 		// Connect to Endpoint
-		be, ep, err := lb.ReturnEndpointAddr()
+		be, ep, err := lb.ReturnEndpointAddr(backendIndex)
 		if err != nil {
 			log.Errorf("No Backends available")
 			return

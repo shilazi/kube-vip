@@ -27,7 +27,7 @@ func (lb *LBInstance) startUDP(bindAddress string) error {
 			select {
 
 			case <-lb.stop:
-				log.Debugln("Closing listener")
+				log.Debugf("Closing the load balancer [%s]", lb.instance.Name)
 
 				// We've closed the stop channel
 				err = l.Close()
@@ -51,7 +51,7 @@ func (lb *LBInstance) startUDP(bindAddress string) error {
 				// 		log.Errorf("TCP Accept error [%s]", err)
 				// 	}
 				// }
-				go persistentUDPConnection(l, lb.instance)
+				go persistentUDPConnection(l, lb.instance, lb.backendIndex)
 			}
 		}
 	}()
