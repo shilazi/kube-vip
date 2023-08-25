@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/plunder-app/kube-vip/pkg/cluster"
@@ -46,7 +47,7 @@ func (sm *Manager) deleteService(uid string) error {
 	return nil
 }
 
-func (sm *Manager) syncServices(s *plndrServices) error {
+func (sm *Manager) syncServices(ctx context.Context, s *plndrServices) error {
 	log.Debugf("[STARTING] Service Sync")
 	// Iterate through the synchronising services
 	for x := range s.Services {
@@ -98,7 +99,7 @@ func (sm *Manager) syncServices(s *plndrServices) error {
 			}
 			newService.cluster = *c
 			// Begin watching this service
-			go sm.newWatcher(newService)
+			go sm.newWatcher(ctx, newService)
 			// Add new service to manager configuration
 			sm.serviceInstances = append(sm.serviceInstances, *newService)
 		}

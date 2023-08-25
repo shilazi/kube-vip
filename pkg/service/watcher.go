@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/davecgh/go-spew/spew"
@@ -16,7 +17,7 @@ import (
 
 // This file handles the watching of a services endpoints and updates a load balancers endpoint configurations accordingly
 
-func (sm *Manager) newWatcher(s *serviceInstance) error {
+func (sm *Manager) newWatcher(ctx context.Context, s *serviceInstance) error {
 	// Build a options structure to defined what we're looking for
 	listOptions := metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", s.service.ServiceName),
@@ -29,7 +30,7 @@ func (sm *Manager) newWatcher(s *serviceInstance) error {
 	// Use a restartable watcher, as this should help in the event of etcd or timeout issues
 	rw, err := watchtools.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return sm.clientSet.CoreV1().Endpoints(ns).Watch(listOptions)
+			return sm.clientSet.CoreV1().Endpoints(ns).Watch(ctx, listOptions)
 		},
 	})
 	if err != nil {
