@@ -99,8 +99,8 @@ func init() {
 	kubeVipCmd.PersistentFlags().BoolVar(&initLoadBalancer.BindToVip, "lbBindToVip", true, "Bind example load balancer to VIP")
 	kubeVipCmd.PersistentFlags().StringVar(&initLoadBalancer.Type, "lbType", "tcp", "Type of load balancer instance (TCP/HTTP)")
 	kubeVipCmd.PersistentFlags().StringVar(&initLoadBalancer.Name, "lbName", "Kubeadm Load Balancer", "The name of a load balancer instance")
-	kubeVipCmd.PersistentFlags().IntVar(&initLoadBalancer.Port, "lbPort", 6443, "Port that load balancer will expose on")
-	kubeVipCmd.PersistentFlags().IntVar(&initLoadBalancer.BackendPort, "lbBackEndPort", 6444, "A port that all backends may be using (optional)")
+	kubeVipCmd.PersistentFlags().IntVar(&initLoadBalancer.Port, "lbPort", 6444, "Port that load balancer will expose on")
+	kubeVipCmd.PersistentFlags().IntVar(&initLoadBalancer.BackendPort, "lbBackEndPort", 6443, "A port that all backends may be using (optional)")
 
 	// BGP flags
 	kubeVipCmd.PersistentFlags().BoolVar(&initConfig.EnableBGP, "bgp", false, "This will enable BGP support within kube-vip")

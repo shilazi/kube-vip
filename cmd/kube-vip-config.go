@@ -32,8 +32,9 @@ func init() {
 	kubeVipSampleConfig.Flags().BoolVar(&cliConfigLB.BindToVip, "lbBindToVip", false, "Bind example load balancer to VIP")
 	kubeVipSampleConfig.Flags().StringVar(&cliConfigLB.Type, "lbType", "tcp", "Type of load balancer instance (TCP/HTTP)")
 	kubeVipSampleConfig.Flags().StringVar(&cliConfigLB.Name, "lbName", "Example Load Balancer", "The name of a load balancer instance")
-	kubeVipSampleConfig.Flags().IntVar(&cliConfigLB.Port, "lbPort", 8080, "Port that load balancer will expose on")
-	kubeVipSampleConfig.Flags().StringSliceVar(&cliBackends, "lbBackends", []string{"192.168.0.1:8080", "192.168.0.2:8080"}, "Comma seperated backends, format: address:port")
+	kubeVipSampleConfig.Flags().IntVar(&cliConfigLB.Port, "lbPort", 6444, "Port that load balancer will expose on")
+	kubeVipSampleConfig.Flags().IntVar(&cliConfigLB.BackendPort, "lbBackEndPort", 6443, "A port that all backends may be using (optional)")
+	kubeVipSampleConfig.Flags().StringSliceVar(&cliBackends, "lbBackends", []string{"192.168.0.1:6443", "192.168.0.2:6443"}, "Comma seperated backends, format: address:port")
 }
 
 var kubeVipSampleConfig = &cobra.Command{

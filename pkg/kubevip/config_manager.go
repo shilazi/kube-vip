@@ -137,8 +137,8 @@ func SampleConfig() {
 		LoadBalancers: []LoadBalancer{
 			{
 				Name:      "Kubernetes Control Plane",
-				Type:      "http",
-				Port:      6443,
+				Type:      "tcp",
+				Port:      6444,
 				BindToVip: true,
 				Backends: []BackEnd{
 					{
