@@ -3,10 +3,8 @@ package cmd
 import (
 	"fmt"
 	"github.com/ghodss/yaml"
-	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"time"
 
@@ -88,13 +86,15 @@ var kubeVipStart = &cobra.Command{
 			log.Warnln("AddPeersAsBackends is true, will append raft peers as backends")
 		}
 
-		// http type of lb exist flag
-		httpExistFlag := false
-
 		// 1. add raft peers.address as backend.address
 		// 2. set backend.port with backendPort
 		for lx := range startConfig.LoadBalancers {
 			lb := &startConfig.LoadBalancers[lx]
+
+			// after testing, when type is http, vip can not work as expected
+			if strings.ToLower(lb.Type) != "tcp" && strings.ToLower(lb.Type) != "udp" {
+				log.Fatalf("Load balancer does not support the [%s] type", lb.Type)
+			}
 
 			// default port for backend, if not set alone
 			var backendPort int
@@ -120,47 +120,6 @@ var kubeVipStart = &cobra.Command{
 				}
 			}
 
-			// format rawURL then pick address, port or set blank
-			if strings.ToLower(lb.Type) == "http" {
-				// log and exit
-				if httpExistFlag {
-					log.Fatalln("Only one http-type load balancer is supported")
-				}
-				// set true
-				httpExistFlag = true
-
-				if lx != len(startConfig.LoadBalancers) - 1 {
-					log.Fatalln("The http-type load balancer must be the last one")
-				}
-
-				for x := range lb.Backends {
-					if len(lb.Backends[x].RawURL) == 0 {
-						continue
-					}
-
-					// log and exit
-					if strings.HasPrefix(lb.Backends[x].RawURL, "https://") {
-						log.Fatalf("Load Balancer [%s] https-scheme backend is not supported", lb.Name)
-					}
-
-					u, err := url.Parse(lb.Backends[x].RawURL)
-					// parse error or prefix is missing
-					if err != nil || u.Host == "" {
-						lb.Backends[x].RawURL = ""
-					} else {
-						lb.Backends[x].Address = u.Hostname()
-						// standard http port
-						if len(u.Port()) == 0 {
-							lb.Backends[x].Port = 80
-						} else {
-							// non-standard http(s) port
-							port, _ := strconv.Atoi(u.Port())
-							lb.Backends[x].Port = port
-						}
-					}
-				}
-			}
-
 			// duplicate removal judgment map
 			existMap := make(map[string]string, 0)
 
@@ -181,16 +140,10 @@ var kubeVipStart = &cobra.Command{
 					lb.Backends[x].Port = backendPort
 				}
 
-				if strings.ToLower(lb.Type) == "http" && len(lb.Backends[x].RawURL) == 0 {
-					log.Debugf("Load Balancer [%s] backend [%s] structure rawURL", lb.Name, lb.Backends[x].Address)
-					lb.Backends[x].RawURL = fmt.Sprintf("http://%s:%d/", lb.Backends[x].Address, lb.Backends[x].Port)
-				}
-
 				backends = append(backends, kubevip.BackEnd{
 					Alive:    true,
 					Address:  lb.Backends[x].Address,
 					Port:     lb.Backends[x].Port,
-					RawURL:   lb.Backends[x].RawURL,
 				})
 			}
 
