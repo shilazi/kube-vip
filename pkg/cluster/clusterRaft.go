@@ -49,6 +49,23 @@ func (cluster *Cluster) StartRaftCluster(c *kubevip.Config) error {
 		ID:      raft.ServerID(c.LocalPeer.ID),
 		Address: raft.ServerAddress(fmt.Sprintf("%s:%d", c.LocalPeer.Address, c.LocalPeer.Port))})
 
+	// Automatically detects if startAsLeader is true/false, default true
+	c.StartAsLeader = true
+	for x := range c.RemotePeers {
+		if c.LocalPeer.Address == c.RemotePeers[x].Address {
+			continue
+		}
+		peerAddress := fmt.Sprintf("%s:%d", c.RemotePeers[x].Address, c.RemotePeers[x].Port)
+		conn, err := net.DialTimeout("tcp", peerAddress, time.Second * 1)
+		if err != nil {
+			log.Debugf("unreachable, error: %v", err)
+		} else {
+			c.StartAsLeader = false
+			conn.Close()
+			break
+		}
+	}
+
 	// If we want to start a node as leader then we will not add any remote peers, this will leave this as a cluster of one
 	// The remotePeers will add themselves to the cluster as they're added
 	if c.StartAsLeader != true {
